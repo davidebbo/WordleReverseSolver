@@ -7,7 +7,7 @@ Console.WriteLine($"Starting at {DateTime.Now}");
 Console.WriteLine("Reading in dictionary...");
 string dictionaryJson = File.ReadAllText("dictionary.json");
 var jarray = (JArray)JsonConvert.DeserializeObject(dictionaryJson);
-var dictionary = jarray.ToObject<string[]>();
+var allWords = jarray.ToObject<string[]>();
 
 //int puzzleNumber = int.Parse(args[0]);
 //var baseScoreManager = await ScoreManager.ReadFromTwitter(puzzleNumber);
@@ -20,23 +20,29 @@ Console.WriteLine($"Number of distinct scores: {baseScoreManager.Count}");
 
 Console.WriteLine("Possible solutions:");
 
-for (int candidate = 0; candidate < dictionary.Length; candidate++)
+var results = allWords.AsParallel()
+    .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedScoreCount(candidateSolution)))
+    .Where(pair => pair.Item2 < 3)
+    .OrderBy(pair => pair.Item2);
+foreach (var pair in results)
 {
-    if (candidate % 1000 == 0) Console.WriteLine(candidate);
-    var scoreManager = (ScoreManager) baseScoreManager.Clone();
-    for (int guess = 0; guess < dictionary.Length; guess++)
-    {
-        var score = ScoreWord(dictionary[guess], dictionary[candidate]);
-        scoreManager.RemoveScore(score);
-    }
-
-    if (scoreManager.Count == 0)
-    {
-        Console.WriteLine($"{dictionary[candidate]}");
-    }
+    Console.WriteLine($"{pair.Item1} ({pair.Item2})");
 }
 
 Console.WriteLine($"Ending at {DateTime.Now}");
+
+// Get the number of score lines that are impossible for this word
+int GetMismatchedScoreCount(string candidateSolution)
+{
+    var scoreManager = (ScoreManager)baseScoreManager.Clone();
+    for (int guess = 0; guess < allWords.Length; guess++)
+    {
+        var score = ScoreWord(allWords[guess], candidateSolution);
+        scoreManager.RemoveScore(score);
+    }
+
+    return scoreManager.Count;
+}
 
 int[] ScoreWord(string guess, string solution)
 {
