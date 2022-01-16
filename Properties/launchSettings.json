@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WordleReverseSolver": {
+      "commandName": "Project",
+      "commandLineArgs": "111"
+    }
+  }
+}
