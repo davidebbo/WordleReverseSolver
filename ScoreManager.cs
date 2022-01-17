@@ -16,7 +16,7 @@ namespace WordleReverseSolver
 
         const int allCorrectScore = 242;    // All 2s, so 3^5-1
 
-        HashSet<int> scores = new HashSet<int>();
+        Dictionary<int,string> scores = new Dictionary<int,string>();
         public int TweetCount { get; private set; }
 
         private ScoreManager() { }
@@ -58,7 +58,7 @@ namespace WordleReverseSolver
 
             foreach (var line in await File.ReadAllLinesAsync(fileName))
             {
-                manager.scores.Add(int.Parse(line));
+                manager.scores[int.Parse(line)] = String.Empty;
             }
 
             return manager;
@@ -138,15 +138,24 @@ namespace WordleReverseSolver
                 TweetCount++;
 
                 // Last line with all correct, so no need to look further
-                if (AddScore(score) == allCorrectScore) return;
+                if (AddScore(score, tweetId) == allCorrectScore) return;
             }
         }
 
-        private int AddScore(int[] scoreArray)
+        private int AddScore(int[] scoreArray, string tweetId)
         {
             int integerScore = ScoreArrayToSingleInteger(scoreArray);
-            scores.Add(integerScore);
+            scores[integerScore] = tweetId;
             return integerScore;
+        }
+
+        internal void DumpAllScoreItems()
+        {
+            foreach (var entry in scores)
+            {
+                Console.Write($"{entry.Value}: ");
+                DumpScore(SingleIntegerToArrayScore(entry.Key));
+            }
         }
 
         static int ScoreArrayToSingleInteger(int[] scoreArray)
@@ -186,7 +195,7 @@ namespace WordleReverseSolver
         public object Clone()
         {
             var manager = new ScoreManager();
-            manager.scores = new HashSet<int>(scores);
+            manager.scores = new Dictionary<int, string>(scores);
             return manager;
         }
     }

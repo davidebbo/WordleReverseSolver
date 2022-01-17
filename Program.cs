@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Linq;
 using WordleReverseSolver;
 
-Console.WriteLine($"Starting at {DateTime.Now}");
+//Console.WriteLine($"Starting at {DateTime.Now}");
 
 Console.WriteLine("Reading in dictionary...");
 string dictionaryJson = File.ReadAllText("dictionary.json");
@@ -22,19 +22,24 @@ Console.WriteLine($"Found {baseScoreManager.Count} distinct score lines across {
 Console.WriteLine();
 
 
-Console.WriteLine("Possible solutions:");
+//DumpMismatchedScoreItems("hello");
+//return;
+
+
+Console.WriteLine("Searching for solutions:");
 
 var results = allWords
     .AsParallel()
     .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedScoreCount(candidateSolution)))
-    .Where(pair => pair.Item2 < 3)
+    .Where(pair => pair.Item2 == 0)
     .OrderBy(pair => pair.Item2);
 foreach (var pair in results)
 {
-    Console.WriteLine($"{pair.Item1} ({pair.Item2})");
+    //Console.WriteLine($"{pair.Item1} ({pair.Item2})");
+    Console.WriteLine($"{pair.Item1}");
 }
 
-Console.WriteLine($"Ending at {DateTime.Now}");
+//Console.WriteLine($"Ending at {DateTime.Now}");
 
 // Get the number of score lines that are impossible for this word
 int GetMismatchedScoreCount(string candidateSolution)
@@ -47,6 +52,19 @@ int GetMismatchedScoreCount(string candidateSolution)
     }
 
     return scoreManager.Count;
+}
+
+// For debugging purpose
+void DumpMismatchedScoreItems(string candidateSolution)
+{
+    var scoreManager = (ScoreManager)baseScoreManager.Clone();
+    for (int guess = 0; guess < allWords.Length; guess++)
+    {
+        var score = ScoreWord(allWords[guess], candidateSolution);
+        scoreManager.RemoveScore(score);
+    }
+
+    scoreManager.DumpAllScoreItems();
 }
 
 int[] ScoreWord(string guess, string solution)
