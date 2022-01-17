@@ -8,19 +8,24 @@ Console.WriteLine("Reading in dictionary...");
 string dictionaryJson = File.ReadAllText("dictionary.json");
 var jarray = (JArray)JsonConvert.DeserializeObject(dictionaryJson);
 var allWords = jarray.ToObject<string[]>();
+Console.WriteLine($"Dictionary loaded with {allWords.Length} words.");
+Console.WriteLine();
 
-//int puzzleNumber = int.Parse(args[0]);
-//var baseScoreManager = await ScoreManager.ReadFromTwitter(puzzleNumber);
+int puzzleNumber = int.Parse(args[0]);
+Console.WriteLine($"Searching and parsing tweets for Wordle puzzle {puzzleNumber}...");
+var baseScoreManager = await ScoreManager.ReadFromTwitter(puzzleNumber);
 
 //baseScoreManager.SaveToFile("scores.txt");
-var baseScoreManager = await ScoreManager.ReadFromFile("scores.txt");
+//var baseScoreManager = await ScoreManager.ReadFromFile("scores.txt");
 
-Console.WriteLine($"Number of distinct scores: {baseScoreManager.Count}");
+Console.WriteLine($"Found {baseScoreManager.Count} distinct score lines across {baseScoreManager.TweetCount} tweets.");
+Console.WriteLine();
 
 
 Console.WriteLine("Possible solutions:");
 
-var results = allWords.AsParallel()
+var results = allWords
+    .AsParallel()
     .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedScoreCount(candidateSolution)))
     .Where(pair => pair.Item2 < 3)
     .OrderBy(pair => pair.Item2);

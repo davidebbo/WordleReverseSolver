@@ -17,6 +17,7 @@ namespace WordleReverseSolver
         const int allCorrectScore = 242;    // All 2s, so 3^5-1
 
         HashSet<int> scores = new HashSet<int>();
+        public int TweetCount { get; private set; }
 
         private ScoreManager() { }
 
@@ -29,8 +30,7 @@ namespace WordleReverseSolver
 
             for (; ; )
             {
-                //var query = $"?query=wordle {puzzleNumber}";
-                var query = $"?query=%22Wordle {puzzleNumber}%22";
+                var query = $"?query=%22Wordle {puzzleNumber}%22 -RT";
                 if (nextToken != null) query += $"&next_token={nextToken}";
 
                 var res = await twitterSearch.GetData(query);
@@ -43,7 +43,7 @@ namespace WordleReverseSolver
                 {
                     //Console.WriteLine(tweet.id);
 
-                    manager.ParseTweetText((string)tweet.text, puzzleNumber);
+                    manager.ParseTweetText((string)tweet.id, (string)tweet.text, puzzleNumber);
                 }
 
                 if (nextToken == null || manager.scores.Count > 100) break;
@@ -83,14 +83,14 @@ namespace WordleReverseSolver
 
         public int Count { get { return scores.Count; } }
 
-        void ParseTweetText(string tweetText, int puzzleNumber)
+        void ParseTweetText(string tweetId, string tweetText, int puzzleNumber)
         {
-            int tweetTextIndex = tweetText.IndexOf($"Wordle {puzzleNumber} ");
+            int tweetTextIndex = tweetText.IndexOf($"Wordle {puzzleNumber} ", StringComparison.InvariantCultureIgnoreCase);
 
             // Bail out if it doesn't seem to relate to this puzzle number
             if (tweetTextIndex < 0)
             {
-                Console.WriteLine($"Not a tweet for this puzzle: {tweetText}");
+                //Console.WriteLine($"Not a tweet for this puzzle: {tweetId}");
                 return;
             };
 
@@ -121,7 +121,7 @@ namespace WordleReverseSolver
                         }
                         else
                         {
-                            Console.WriteLine($"Invalid second char at {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}: {tweetText}");
+                            //Console.WriteLine($"Invalid score char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
                             return;
                         }
                     }
@@ -130,10 +130,12 @@ namespace WordleReverseSolver
                     }
                     else
                     {
-                        Console.WriteLine($"Invalid solution char at {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}: {tweetText}");
+                        //Console.WriteLine($"Invalid score char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
                         return;
                     }
                 }
+
+                TweetCount++;
 
                 // Last line with all correct, so no need to look further
                 if (AddScore(score) == allCorrectScore) return;
