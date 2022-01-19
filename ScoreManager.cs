@@ -42,8 +42,14 @@ namespace WordleReverseSolver
                 foreach (var tweet in twitterResponse.data)
                 {
                     //Console.WriteLine(tweet.id);
-
-                    manager.ParseTweetText((string)tweet.id, (string)tweet.text, puzzleNumber);
+                    try
+                    {
+                        manager.ParseTweetText((string)tweet.id, (string)tweet.text, puzzleNumber);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Failed to process tweet {tweet.id}: { ex.Message}");
+                    }
                 }
 
                 if (nextToken == null || manager.scores.Count > 100) break;
@@ -125,7 +131,8 @@ namespace WordleReverseSolver
                             return;
                         }
                     }
-                    else if (tweetText[tweetTextIndex] == 0xFE0F) {
+                    else if (tweetText[tweetTextIndex] == 0xFE0F)
+                    {
                         // Sometimes we get this character between real ones. Maybe some kind of space? Ignore it
                     }
                     else
