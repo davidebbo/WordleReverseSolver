@@ -28,7 +28,7 @@ namespace WordleReverseSolver
             var twitterSearch = new TwitterSearchService();
             string? nextToken = null;
 
-            for (; ; )
+            for (int page = 0; page < 100; page++)
             {
                 var query = $"?query=%22Wordle {puzzleNumber}%22 -RT";
                 if (nextToken != null) query += $"&next_token={nextToken}";
@@ -50,6 +50,8 @@ namespace WordleReverseSolver
                     {
                         Console.WriteLine($"Failed to process tweet {tweet.id}: { ex.Message}");
                     }
+
+                    manager.TweetCount++;
                 }
 
                 if (nextToken == null || manager.scores.Count > 100) break;
@@ -141,8 +143,6 @@ namespace WordleReverseSolver
                         return;
                     }
                 }
-
-                TweetCount++;
 
                 // Last line with all correct, so no need to look further
                 if (AddScore(score, tweetId) == allCorrectScore) return;
