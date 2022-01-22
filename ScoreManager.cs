@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Text.RegularExpressions;
 
 namespace WordleReverseSolver
 {
@@ -101,6 +102,22 @@ namespace WordleReverseSolver
                 //Console.WriteLine($"Not a tweet for this puzzle: {tweetId}");
                 return;
             };
+
+            var bannedRegexes = new string[] {
+                "http://",  // Links are often a sign of some non-English Wordle, e.g. wordle.at
+                "https://",
+                "[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]"   // Japanese/Chinese characters
+            };
+            foreach (var bannedRegex in bannedRegexes)
+            {
+                if (Regex.Match(tweetText, bannedRegex).Success)
+                {
+                    Console.WriteLine($"Ignoring tweet {tweetId} which contains banned regex '{bannedRegex}'");
+                    return;
+                }
+            }
+
+            //tweetText.IndexOfAny()
 
             for (; ; )
             {
