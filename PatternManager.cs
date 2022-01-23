@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace WordleReverseSolver
 {
-    internal class ScoreManager: ICloneable
+    internal class PatternManager: ICloneable
     {
         const int WordLength = 5;
 
@@ -15,16 +15,16 @@ namespace WordleReverseSolver
         const char yellowSecondChar = (char)0xDFE8;
         const char greenSecondChar = (char)0xDFE9;
 
-        const int allCorrectScore = 242;    // All 2s, so 3^5-1
+        const int allCorrectPattern = 242;    // All 2s, so 3^5-1
 
-        Dictionary<int,string> scores = new Dictionary<int,string>();
+        Dictionary<int,string> _patterns = new Dictionary<int,string>();
         public int TweetCount { get; private set; }
 
-        private ScoreManager() { }
+        private PatternManager() { }
 
-        async public static Task<ScoreManager> ReadFromTwitter(int puzzleNumber)
+        async public static Task<PatternManager> ReadFromTwitter(int puzzleNumber)
         {
-            var manager = new ScoreManager();
+            var manager = new PatternManager();
 
             var twitterSearch = new TwitterSearchService();
             string? nextToken = null;
@@ -55,19 +55,19 @@ namespace WordleReverseSolver
                     manager.TweetCount++;
                 }
 
-                if (nextToken == null || manager.scores.Count > 100) break;
+                if (nextToken == null || manager._patterns.Count > 100) break;
             }
 
             return manager;
         }
 
-        async public static Task<ScoreManager> ReadFromFile(string fileName)
+        async public static Task<PatternManager> ReadFromFile(string fileName)
         {
-            var manager = new ScoreManager();
+            var manager = new PatternManager();
 
             foreach (var line in await File.ReadAllLinesAsync(fileName))
             {
-                manager.scores[int.Parse(line)] = String.Empty;
+                manager._patterns[int.Parse(line)] = String.Empty;
             }
 
             return manager;
@@ -77,20 +77,20 @@ namespace WordleReverseSolver
         {
             using (var writer = new StreamWriter(fileName))
             {
-                foreach (var integerScore in scores)
+                foreach (var integerPattern in _patterns)
                 {
-                    writer.WriteLine(integerScore.ToString());
+                    writer.WriteLine(integerPattern.ToString());
                 }
             }
         }
 
-        public bool RemoveScore(int[] scoreArray)
+        public bool RemovePattern(int[] patternArray)
         {
-            int scoreInteger = ScoreArrayToSingleInteger(scoreArray);
-            return scores.Remove(scoreInteger);
+            int patternInteger = PatternArrayToSingleInteger(patternArray);
+            return _patterns.Remove(patternInteger);
         }
 
-        public int Count { get { return scores.Count; } }
+        public int Count { get { return _patterns.Count; } }
 
         void ParseTweetText(string tweetId, string tweetText, int puzzleNumber)
         {
@@ -121,32 +121,32 @@ namespace WordleReverseSolver
 
             for (; ; )
             {
-                int[] score = new int[WordLength];
-                int scoreIndex = 0;
+                int[] pattern = new int[WordLength];
+                int patternIndex = 0;
 
                 tweetTextIndex = tweetText.IndexOfAny(new char[] { black, gray, yellowGreenFirstChar }, tweetTextIndex);
                 if (tweetTextIndex < 0) return;
 
-                for (; scoreIndex < WordLength; tweetTextIndex++)
+                for (; patternIndex < WordLength; tweetTextIndex++)
                 {
                     if (tweetText[tweetTextIndex] == black || tweetText[tweetTextIndex] == gray)
                     {
-                        score[scoreIndex++] = 0;
+                        pattern[patternIndex++] = 0;
                     }
                     else if (tweetText[tweetTextIndex] == yellowGreenFirstChar)
                     {
                         tweetTextIndex++;
                         if (tweetText[tweetTextIndex] == yellowSecondChar)
                         {
-                            score[scoreIndex++] = 1;
+                            pattern[patternIndex++] = 1;
                         }
                         else if (tweetText[tweetTextIndex] == greenSecondChar)
                         {
-                            score[scoreIndex++] = 2;
+                            pattern[patternIndex++] = 2;
                         }
                         else
                         {
-                            //Console.WriteLine($"Invalid score char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
+                            //Console.WriteLine($"Invalid pattern char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
                             return;
                         }
                     }
@@ -156,70 +156,70 @@ namespace WordleReverseSolver
                     }
                     else
                     {
-                        //Console.WriteLine($"Invalid score char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
+                        //Console.WriteLine($"Invalid pattern char in tweet {tweetId} at index {tweetTextIndex}: {(int)tweetText[tweetTextIndex]}");
                         return;
                     }
                 }
 
                 // Last line with all correct, so no need to look further
-                if (AddScore(score, tweetId) == allCorrectScore) return;
+                if (AddPattern(pattern, tweetId) == allCorrectPattern) return;
             }
         }
 
-        private int AddScore(int[] scoreArray, string tweetId)
+        private int AddPattern(int[] patternArray, string tweetId)
         {
-            int integerScore = ScoreArrayToSingleInteger(scoreArray);
-            scores[integerScore] = tweetId;
-            return integerScore;
+            int integerPattern = PatternArrayToSingleInteger(patternArray);
+            _patterns[integerPattern] = tweetId;
+            return integerPattern;
         }
 
-        internal void DumpAllScoreItems()
+        internal void DumpAllPatterns()
         {
-            foreach (var entry in scores)
+            foreach (var entry in _patterns)
             {
                 Console.Write($"{entry.Value}: ");
-                DumpScore(SingleIntegerToArrayScore(entry.Key));
+                DumpPattern(SingleIntegerToArrayPattern(entry.Key));
             }
         }
 
-        static int ScoreArrayToSingleInteger(int[] scoreArray)
+        static int PatternArrayToSingleInteger(int[] patternArray)
         {
             int num = 0;
-            for (int i = 0; i < scoreArray.Length; i++)
+            for (int i = 0; i < patternArray.Length; i++)
             {
                 num *= 3;
-                num += scoreArray[i];
+                num += patternArray[i];
             }
 
             return num;
         }
 
-        static int[] SingleIntegerToArrayScore(int integerScore)
+        static int[] SingleIntegerToArrayPattern(int integerPattern)
         {
-            var scoreArray = new int[WordLength];
+            var patternArray = new int[WordLength];
 
             for (int i = WordLength-1; i >= 0; i--)
             {
-                scoreArray[i] = integerScore % 3;
-                integerScore /= 3;
+                patternArray[i] = integerPattern % 3;
+                integerPattern /= 3;
             }
 
-            return scoreArray;
+            return patternArray;
         }
 
-        static void DumpScore(int[] scoreArray)
+        static void DumpPattern(int[] patternArray)
         {
-            for (int i = 0; i < scoreArray.Length; i++)
+            for (int i = 0; i < patternArray.Length; i++)
             {
-                Console.Write(scoreArray[i]);
+                Console.Write(patternArray[i]);
             }
             Console.WriteLine();
         }
 
         public object Clone()
         {
-            var manager = new ScoreManager();
-            manager.scores = new Dictionary<int, string>(scores);
+            var manager = new PatternManager();
+            manager._patterns = new Dictionary<int, string>(_patterns);
             return manager;
         }
     }

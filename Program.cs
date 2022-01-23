@@ -13,16 +13,16 @@ Console.WriteLine();
 
 int puzzleNumber = int.Parse(args[0]);
 Console.WriteLine($"Searching and parsing tweets for Wordle puzzle {puzzleNumber}...");
-var baseScoreManager = await ScoreManager.ReadFromTwitter(puzzleNumber);
+var mainPatternManager = await PatternManager.ReadFromTwitter(puzzleNumber);
 
-//baseScoreManager.SaveToFile("scores.txt");
-//var baseScoreManager = await ScoreManager.ReadFromFile("scores.txt");
+//basePatternManager.SaveToFile("patterns.txt");
+//var basePatternManager = await PatternManager.ReadFromFile("patterns.txt");
 
-Console.WriteLine($"Found {baseScoreManager.Count} distinct score lines across {baseScoreManager.TweetCount} tweets.");
+Console.WriteLine($"Found {mainPatternManager.Count} distinct patterns across {mainPatternManager.TweetCount} tweets.");
 Console.WriteLine();
 
 
-//DumpMismatchedScoreItems("hello");
+//DumpMismatchedPatternItems("hello");
 //return;
 
 
@@ -30,7 +30,7 @@ Console.WriteLine("Searching for solutions:");
 
 var results = allWords
     .AsParallel()
-    .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedScoreCount(candidateSolution)))
+    .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedPatternCount(candidateSolution)))
     .Where(pair => pair.Item2 == 0)
     .OrderBy(pair => pair.Item2);
 foreach (var pair in results)
@@ -41,30 +41,30 @@ foreach (var pair in results)
 
 //Console.WriteLine($"Ending at {DateTime.Now}");
 
-// Get the number of score lines that are impossible for this word
-int GetMismatchedScoreCount(string candidateSolution)
+// Get the number of patterns that are impossible for this word
+int GetMismatchedPatternCount(string candidateSolution)
 {
-    var scoreManager = (ScoreManager)baseScoreManager.Clone();
+    var patternManager = (PatternManager)mainPatternManager.Clone();
     for (int guess = 0; guess < allWords.Length; guess++)
     {
-        var score = ScoreWord(allWords[guess], candidateSolution);
-        scoreManager.RemoveScore(score);
+        var pattern = ScoreWord(allWords[guess], candidateSolution);
+        patternManager.RemovePattern(pattern);
     }
 
-    return scoreManager.Count;
+    return patternManager.Count;
 }
 
 // For debugging purpose
-void DumpMismatchedScoreItems(string candidateSolution)
+void DumpMismatchedPatternItems(string candidateSolution)
 {
-    var scoreManager = (ScoreManager)baseScoreManager.Clone();
+    var patternManager = (PatternManager)mainPatternManager.Clone();
     for (int guess = 0; guess < allWords.Length; guess++)
     {
-        var score = ScoreWord(allWords[guess], candidateSolution);
-        scoreManager.RemoveScore(score);
+        var pattern = ScoreWord(allWords[guess], candidateSolution);
+        patternManager.RemovePattern(pattern);
     }
 
-    scoreManager.DumpAllScoreItems();
+    patternManager.DumpAllPatterns();
 }
 
 int[] ScoreWord(string guess, string solution)

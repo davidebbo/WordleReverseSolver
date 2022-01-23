@@ -2,7 +2,7 @@
   "profiles": {
     "WordleReverseSolver": {
       "commandName": "Project",
-      "commandLineArgs": "211"
+      "commandLineArgs": "218"
     }
   }
 }
