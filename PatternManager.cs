@@ -3,6 +3,15 @@ using System.Text.RegularExpressions;
 
 namespace WordleReverseSolver
 {
+    internal class PatternData
+    {
+        // Number of time it was found in tweets
+        public int IncidenceCount { get; set; }
+
+        // ID of some tweet that contains this pattern
+        public string SampleTweetId { get; set; }
+    }
+
     internal class PatternManager: ICloneable
     {
         const int WordLength = 5;
@@ -17,7 +26,7 @@ namespace WordleReverseSolver
 
         const int allCorrectPattern = 242;    // All 2s, so 3^5-1
 
-        Dictionary<int,string> _patterns = new Dictionary<int,string>();
+        Dictionary<int, PatternData> _patterns = new Dictionary<int, PatternData>();
         public int TweetCount { get; private set; }
 
         private PatternManager() { }
@@ -61,29 +70,6 @@ namespace WordleReverseSolver
             return manager;
         }
 
-        async public static Task<PatternManager> ReadFromFile(string fileName)
-        {
-            var manager = new PatternManager();
-
-            foreach (var line in await File.ReadAllLinesAsync(fileName))
-            {
-                manager._patterns[int.Parse(line)] = String.Empty;
-            }
-
-            return manager;
-        }
-
-        public void SaveToFile(string fileName)
-        {
-            using (var writer = new StreamWriter(fileName))
-            {
-                foreach (var integerPattern in _patterns)
-                {
-                    writer.WriteLine(integerPattern.ToString());
-                }
-            }
-        }
-
         public bool RemovePattern(int[] patternArray)
         {
             int patternInteger = PatternArrayToSingleInteger(patternArray);
@@ -91,6 +77,17 @@ namespace WordleReverseSolver
         }
 
         public int Count { get { return _patterns.Count; } }
+
+        public int GetTotalPatternIncidenceCount()
+        {
+            int totalIncidenceCount = 0;
+            foreach (var pattern in _patterns)
+            {
+                totalIncidenceCount += pattern.Value.IncidenceCount;
+            }
+
+            return totalIncidenceCount;
+        }
 
         void ParseTweetText(string tweetId, string tweetText, int puzzleNumber)
         {
@@ -106,11 +103,13 @@ namespace WordleReverseSolver
             var bannedRegexes = new string[] {
                 "http://",  // Links are often a sign of some non-English Wordle, e.g. wordle.at
                 "https://",
-                "[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]"   // Japanese/Chinese characters
+                "[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]",  // Japanese/Chinese characters
+                "[\u0600-\u06ff]|[\u0750-\u077f]|[\ufb50-\ufc3f]|[\ufe70-\ufefc]",      // Arabic characters
+                @"\p{IsCyrillic}"   // Russian characters
             };
             foreach (var bannedRegex in bannedRegexes)
             {
-                if (Regex.Match(tweetText, bannedRegex).Success)
+                if (Regex.IsMatch(tweetText, bannedRegex))
                 {
                     Console.WriteLine($"Ignoring tweet {tweetId} which contains banned regex '{bannedRegex}'");
                     return;
@@ -169,7 +168,12 @@ namespace WordleReverseSolver
         private int AddPattern(int[] patternArray, string tweetId)
         {
             int integerPattern = PatternArrayToSingleInteger(patternArray);
-            _patterns[integerPattern] = tweetId;
+            if (!_patterns.ContainsKey(integerPattern))
+            {
+                _patterns[integerPattern] = new PatternData { SampleTweetId = tweetId };
+            }
+
+            _patterns[integerPattern].IncidenceCount++;
             return integerPattern;
         }
 
@@ -177,7 +181,7 @@ namespace WordleReverseSolver
         {
             foreach (var entry in _patterns)
             {
-                Console.Write($"{entry.Value}: ");
+                Console.Write($"{entry.Value.SampleTweetId} ({entry.Value.IncidenceCount}): ");
                 DumpPattern(SingleIntegerToArrayPattern(entry.Key));
             }
         }
@@ -219,7 +223,7 @@ namespace WordleReverseSolver
         public object Clone()
         {
             var manager = new PatternManager();
-            manager._patterns = new Dictionary<int, string>(_patterns);
+            manager._patterns = new Dictionary<int, PatternData>(_patterns);
             return manager;
         }
     }

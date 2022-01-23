@@ -15,9 +15,6 @@ int puzzleNumber = int.Parse(args[0]);
 Console.WriteLine($"Searching and parsing tweets for Wordle puzzle {puzzleNumber}...");
 var mainPatternManager = await PatternManager.ReadFromTwitter(puzzleNumber);
 
-//basePatternManager.SaveToFile("patterns.txt");
-//var basePatternManager = await PatternManager.ReadFromFile("patterns.txt");
-
 Console.WriteLine($"Found {mainPatternManager.Count} distinct patterns across {mainPatternManager.TweetCount} tweets.");
 Console.WriteLine();
 
@@ -26,23 +23,23 @@ Console.WriteLine();
 //return;
 
 
-Console.WriteLine("Searching for solutions:");
+Console.WriteLine("Searching for most likely solutions (in order):");
 
 var results = allWords
     .AsParallel()
-    .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedPatternCount(candidateSolution)))
-    .Where(pair => pair.Item2 == 0)
-    .OrderBy(pair => pair.Item2);
+    .Select(candidateSolution => new Tuple<string, int>(candidateSolution, GetMismatchedPatternIncidenceCount(candidateSolution)))
+    //.Where(pair => pair.Item2 < 5)
+    .OrderBy(pair => pair.Item2).Take(5);
 foreach (var pair in results)
 {
-    //Console.WriteLine($"{pair.Item1} ({pair.Item2})");
-    Console.WriteLine($"{pair.Item1}");
+    Console.WriteLine($"{pair.Item1} ({pair.Item2})");
+    //Console.WriteLine($"{pair.Item1}");
 }
 
 //Console.WriteLine($"Ending at {DateTime.Now}");
 
-// Get the number of patterns that are impossible for this word
-int GetMismatchedPatternCount(string candidateSolution)
+// Get the total incidence count patterns that are impossible for this word
+int GetMismatchedPatternIncidenceCount(string candidateSolution)
 {
     var patternManager = (PatternManager)mainPatternManager.Clone();
     for (int guess = 0; guess < allWords.Length; guess++)
